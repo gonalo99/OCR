@@ -21,7 +21,7 @@ class EasyOCR():
 
 class Tesseract():
     def process_frame(self, frame):
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         results = pytesseract.image_to_data(frame)
         
         boxes = []
@@ -39,9 +39,16 @@ class Tesseract():
         return [boxes, texts]
 
 class TextSpotting():
-    def __init__(self, detModelPath, recModelPath, vocPath):
-        inputHeight = 736
-        inputWidth = 736
+    def __init__(self, detModel, recModelPath, vocPath):
+        if detModel == "DB_IC15_resnet50.onnx" or detModel == "DB_IC15_resnet18.onnx":
+            inputHeight = 736
+            inputWidth = 1280
+        if detModel == "DB_TD500_resnet50.onnx" or detModel == "DB_TD500_resnet18.onnx":
+            inputHeight = 736
+            inputWidth = 736
+
+        detModelPath = "../data/"+detModel
+
         binaryThreshold = 0.3
         polygonThreshold = 0.5
         maxCandidates = 200
@@ -53,6 +60,8 @@ class TextSpotting():
         self.detector.setPolygonThreshold(polygonThreshold)
         self.detector.setUnclipRatio(unclipRatio)
         self.detector.setMaxCandidates(maxCandidates)
+        self.detector.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        self.detector.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
         self.recognizer = cv2.dnn_TextRecognitionModel(recModelPath)
 
