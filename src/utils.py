@@ -1,5 +1,4 @@
 import cv2
-from matplotlib.pyplot import text
 import numpy as np
 import easyocr
 import pytesseract

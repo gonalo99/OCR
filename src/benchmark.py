@@ -26,7 +26,7 @@ def main():
         model = utils.TextSpotting(args.detModel, args.recModelPath, args.vocPath)
         args.model += " " + args.detModel
 
-    evaluate_recognition(model, args.model)
+    # evaluate_recognition(model, args.model)
     # evaluate_detection(model, args.model, "TD500")
 
 
