@@ -1,14 +1,4 @@
 ------------------ Detection IC15 ----------------------
-Results for model  tesseract
-Threshold 40:  0.8 %
-Threshold 50:  0.4 %
-Threshold 60:  0.0 %
-Threshold 70:  0.0 %
-Threshold 80:  0.0 %
-Threshold 90:  0.0 %
-Time per frame:  0.4236400284767151  - FPS:  2.360494601031224
-
-
 Results for model  easyocr
 Threshold 40:  77.80 %
 Threshold 50:  61.40 %
@@ -17,6 +7,16 @@ Threshold 70:  14.60 %
 Threshold 80:  2.00 %
 Threshold 90:  0.00 %
 Time per frame:  1.9870834736824035  - FPS:  0.50325012172077
+
+
+Results for model  tesseract
+Threshold 40:  0.8 %
+Threshold 50:  0.4 %
+Threshold 60:  0.0 %
+Threshold 70:  0.0 %
+Threshold 80:  0.0 %
+Threshold 90:  0.0 %
+Time per frame:  0.4236400284767151  - FPS:  2.360494601031224
 
 
 Results for model  text_spotting DB_TD500_resnet50
@@ -69,6 +69,54 @@ Threshold 90:  0.50 %
 Time per frame:  2.1397496283054354  - FPS:  0.46734439710684533
 
 
+Detection results for model  tesseract
+Threshold 40:  4.50 %
+Threshold 50:  3.50 %
+Threshold 60:  2.50 %
+Threshold 70:  1.00 %
+Threshold 80:  0.50 %
+Threshold 90:  0.00 %
+Time per frame:  0.7636138677597046  - FPS:  1.3095623877730334
+
+
+Detection results for model  text_spotting DB_TD500_resnet50.onnx
+Threshold 40:  86.50 %
+Threshold 50:  82.00 %
+Threshold 60:  73.50 %
+Threshold 70:  60.00 %
+Threshold 80:  35.50 %
+Threshold 90:  5.50 %
+Time per frame:  0.8774788558483124  - FPS:  1.1396285999771913
+
+
+Detection results for model  text_spotting DB_TD500_resnet18.onnx
+Threshold 40:  87.50 %
+Threshold 50:  81.50 %
+Threshold 60:  73.50 %
+Threshold 70:  61.00 %
+Threshold 80:  37.00 %
+Threshold 90:  6.00 %
+Time per frame:  0.5599188494682312  - FPS:  1.7859730940469762
+
+
+Detection results for model  text_spotting DB_IC15_resnet50.onnx
+Threshold 40:  56.50 %
+Threshold 50:  48.00 %
+Threshold 60:  33.00 %
+Threshold 70:  18.50 %
+Threshold 80:  4.50 %
+Threshold 90:  0.00 %
+Time per frame:  1.422573164701462  - FPS:  0.7029515421864843
+
+
+Detection results for model  text_spotting DB_IC15_resnet18.onnx
+Threshold 40:  60.50 %
+Threshold 50:  54.50 %
+Threshold 60:  39.00 %
+Threshold 70:  21.50 %
+Threshold 80:  5.50 %
+Threshold 90:  0.00 %
+Time per frame:  0.9843058288097382  - FPS:  1.0159444054184255
 
 ------------------ Recognition ----------------------
 Recognition results for model  easyocr
@@ -96,15 +144,9 @@ Recognition accuracy:  0.27 %
 Time per frame:  0.6725998696486155  - FPS:  1.486768055013789
 
 
-python benchmark.py --model easyocr && python benchmark.py --model tesseract && python benchmark.py --model "text_spotting" --detModel DB_TD500_resnet50.onnx && python benchmark.py --model "text_spotting" --detModel DB_TD500_resnet18.onnx && python benchmark.py --model "text_spotting" --detModel DB_IC15_resnet50.onnx && python benchmark.py --model "text_spotting" --detModel DB_IC15_resnet18.onnx
-
-
-
-
-
-
-
-
+Recognition results for model  text_spotting DB_TD500_resnet18.onnx
+Recognition accuracy:  0.90 %
+Time per frame:  0.37881943224747605  - FPS:  2.639780103325633
 
 
 
