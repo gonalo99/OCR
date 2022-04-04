@@ -1,17 +1,15 @@
 import argparse
 import cv2
 import numpy as np
-from shapely.geometry import Polygon
-from shapely.ops import unary_union
 import os.path
 import time
 
 import utils
+import test
 
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--inputImage', help = "Path to an input image. Skip this argument to capture frames from a camera", required=True)
     parser.add_argument("--model", required=True, choices=["easyocr", "tesseract", "text_spotting"], help="Choose a model from Easyocr, Tesseract or TextSpotting")
     parser.add_argument("--detModel", help="Path to a binary .onnx model for detection", default="DB_TD500_resnet50.onnx", choices=["DB_IC15_resnet50.onnx", "DB_TD500_resnet50.onnx", "DB_IC15_resnet18.onnx", "DB_TD500_resnet18.onnx"])
     parser.add_argument("--recModelPath", help="Path to a binary .onnx model for recognition", default="../data/crnn.onnx")
@@ -27,7 +25,7 @@ def main():
         args.model += " " + args.detModel
 
     # evaluate_recognition(model, args.model)
-    # evaluate_detection(model, args.model, "TD500")
+    evaluate_detection(model, args.model, "IC15")
 
 
 def evaluate_recognition(model, name):
@@ -42,12 +40,12 @@ def evaluate_recognition(model, name):
         info = text.split(" ")
         frame = cv2.imread(file_path + info[0])
         start = time.time()
-        boxes, texts = model.process_frame(frame)
+        texts = model.get_text(frame)
         end = time.time()
         total_time += end - start
 
         if len(texts) > 0:
-            if texts[0].lower() == info[1][:-1].lower():
+            if texts.lower() == info[1][:-1].lower():
                 hits += 1
 
         if i / len(test_texts) > progress:
@@ -65,30 +63,26 @@ def evaluate_detection(model, name, dataset):
     file_path = "../data/evaluation_data_det/" + dataset + "/"
     test_images = open(os.path.join(file_path, "test_list.txt"), 'r').readlines()
 
-    i, t40, t50, t60, t70, t80, t90, progress, total_time = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    i, t40, t50, t60, t70, t80, t90, progress, total_time, number_true = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for image in test_images:
         frame = cv2.imread(os.path.join(file_path, "test_images/", image[:-1]))
         true_boxes = readTruths(os.path.join(file_path, "test_gts/", image[:-5] + ".txt"))
+        number_true += len(true_boxes)
 
         start = time.time()
-        boxes, texts = model.process_frame(frame)
+        boxes = model.get_bboxes(frame)
         end = time.time()
         total_time += end - start
 
-        score = IoU(boxes, true_boxes)
-        if score > 0.40:
-            t40 += 1
-            if score > 0.50:
-                t50 += 1
-                if score > 0.60:
-                    t60 += 1
-                    if score > 0.70:
-                        t70 += 1
-                        if score > 0.80:
-                            t80 += 1
-                            if score > 0.90:
-                                t90 += 1
+        if len(boxes) > 0:
+            _, _, ious, _ = test.match_bboxes(true_boxes, boxes, 0.4)
+            t40 += len(ious)
+            t50 += len([hit for hit in ious if hit > 0.5])
+            t60 += len([hit for hit in ious if hit > 0.6])
+            t70 += len([hit for hit in ious if hit > 0.7])
+            t80 += len([hit for hit in ious if hit > 0.8])
+            t90 += len([hit for hit in ious if hit > 0.9])
 
         if i / len(test_images) > progress:
             print("Processing frames: ", "{:.2f}".format(progress * 100), "% completed")
@@ -97,12 +91,12 @@ def evaluate_detection(model, name, dataset):
         i += 1
 
     print("Detection results for model ", name)
-    print("Threshold 40: ", "{:.2f}".format(t40 / len(test_images) * 100), "%")
-    print("Threshold 50: ", "{:.2f}".format(t50 / len(test_images) * 100), "%")
-    print("Threshold 60: ", "{:.2f}".format(t60 / len(test_images) * 100), "%")
-    print("Threshold 70: ", "{:.2f}".format(t70 / len(test_images) * 100), "%")
-    print("Threshold 80: ", "{:.2f}".format(t80 / len(test_images) * 100), "%")
-    print("Threshold 90: ", "{:.2f}".format(t90 / len(test_images) * 100), "%")
+    print("Threshold 40: ", "{:.2f}".format(t40 / number_true * 100), "%")
+    print("Threshold 50: ", "{:.2f}".format(t50 / number_true * 100), "%")
+    print("Threshold 60: ", "{:.2f}".format(t60 / number_true * 100), "%")
+    print("Threshold 70: ", "{:.2f}".format(t70 / number_true * 100), "%")
+    print("Threshold 80: ", "{:.2f}".format(t80 / number_true * 100), "%")
+    print("Threshold 90: ", "{:.2f}".format(t90 / number_true * 100), "%")
     print("Time per frame: ", total_time / len(test_images), " - FPS: ", len(test_images) / total_time)
 
 
@@ -110,23 +104,10 @@ def readTruths(filepath):
     true_boxes = []
     for line in open(filepath, "r").readlines():
         vertices = line.split(",")
-        box = np.int32([[vertices[0], vertices[1]], [vertices[2], vertices[3]], [vertices[4], vertices[5]], [vertices[6], vertices[7]]])
+        box = [int(vertices[0]), int(vertices[1]), int(vertices[4]), int(vertices[5])]
         true_boxes.append(box)
 
-    return true_boxes
-
-
-def IoU(boxes, true_boxes):
-    true_polygon = unary_union([Polygon(box) for box in true_boxes])
-    detected_polygon = unary_union([Polygon(box) for box in boxes])
-
-    union = unary_union([true_polygon, detected_polygon])
-
-    if union.area == 0:
-        return 0
-    else:
-        intersection = detected_polygon.intersection(true_polygon)
-        return intersection.area / union.area
+    return np.array(true_boxes)
 
 
 if __name__ == "__main__":

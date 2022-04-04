@@ -4,8 +4,25 @@ import easyocr
 import pytesseract
 
 class EasyOCR():
+    def __init__(self):
+        self.reader = easyocr.Reader(['en'])
+
+
+    def get_bboxes(self, frame):
+        ths = 0.1
+        results = self.reader.detect(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
+        boxes = []
+        for result in results[0][0]:
+            boxes.append([result[0], result[2], result[1], result[3]])
+
+        return np.array(boxes)
+
+    def get_text(self, frame):
+        texts = self.reader.recognize(frame, batch_size=2, allowlist="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        return texts[0][1]
+
+
     def process_frame(self, frame):
-        reader = easyocr.Reader(['en'])
         results = reader.readtext(frame)
 
         boxes = []
@@ -19,10 +36,41 @@ class EasyOCR():
         return [boxes, texts]
 
 class Tesseract():
+    def get_bboxes(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 11')
+
+        boxes = []
+        for id, line in enumerate(results.splitlines()):
+            if id != 0:
+                line = line.split()
+                if len(line) == 12:
+                    x, y, w, h = int(line[6]), int(line[7]), int(line[8]), int(line[9])
+                    boxes.append([x, y, w + x, h + y])
+
+        return np.array(boxes)
+
+    def get_text(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 8')
+
+        texts = []
+        for id, line in enumerate(results.splitlines()):
+            if id != 0:
+                line = line.split()
+                if len(line) == 12:
+                    texts.append(line[11])
+        if len(texts) > 0:
+            return texts[0]
+        else:
+            return texts
+
+
     def process_frame(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        results = pytesseract.image_to_data(frame)
-        
+        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 11')
+
         boxes = []
         texts = []
         for id, line in enumerate(results.splitlines()):
@@ -30,12 +78,12 @@ class Tesseract():
                 line = line.split()
                 if len(line) == 12:
                     x, y, w, h = int(line[6]), int(line[7]), int(line[8]), int(line[9])
-                    #cv2.rectangle(frame, (x, y), (w+x, h+y), (0, 255, 0), 2)
-                    #cv2.putText(frame, line[11], (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 0, 0), 2)
-                    boxes.append(np.array([[x, y], [x+w, y], [x+w, y+h], [x, y+h]]))
+                    # cv2.rectangle(frame, (x, y), (w+x, h+y), (0, 255, 0), 2)
+                    # cv2.putText(frame, line[11], (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 0, 0), 2)
+                    boxes.append([x, y, w+x, h+y])
                     texts.append(line[11])
-        
-        return [boxes, texts]
+
+        return [np.array(boxes), texts]
 
 class TextSpotting():
     def __init__(self, detModel, recModelPath, vocPath):
@@ -48,21 +96,14 @@ class TextSpotting():
 
         detModelPath = "../data/"+detModel
 
-        binaryThreshold = 0.3
-        polygonThreshold = 0.5
-        maxCandidates = 200
-        unclipRatio = 2.0
-
         # Load networks
         self.detector = cv2.dnn_TextDetectionModel_DB(detModelPath)
-        self.detector.setBinaryThreshold(binaryThreshold)
-        self.detector.setPolygonThreshold(polygonThreshold)
-        self.detector.setUnclipRatio(unclipRatio)
-        self.detector.setMaxCandidates(maxCandidates)
         self.detector.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         self.detector.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
         self.recognizer = cv2.dnn_TextRecognitionModel(recModelPath)
+        self.recognizer.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        self.recognizer.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
         # Load vocabulary
         if vocPath:
@@ -82,6 +123,22 @@ class TextSpotting():
         recMean = (127.5)
         recInputSize = (100, 32)
         self.recognizer.setInputParams(recScale, recInputSize, recMean)
+
+
+    def get_bboxes(self, frame):
+        detResults = self.detector.detect(frame)
+        boxes = []
+        if len(detResults[0]) > 0:
+            for i in range(len(detResults[0])):
+                quadrangle = detResults[0][i].astype('float32')
+                x1, y1, x2, y2 = [quadrangle[0][0], quadrangle[2][1], quadrangle[2][0], quadrangle[0][1]]
+                boxes.append([x1, y1, x2, y2])
+
+        return np.array(boxes)
+
+    def get_text(self, frame):
+        texts = self.recognizer.recognize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+        return texts
 
     def process_frame(self, frame):
         detResults = self.detector.detect(frame)
