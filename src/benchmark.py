@@ -5,7 +5,7 @@ import os.path
 import time
 
 import utils
-import test
+import match_boxes
 
 
 def main():
@@ -76,7 +76,7 @@ def evaluate_detection(model, name, dataset):
         total_time += end - start
 
         if len(boxes) > 0:
-            _, _, ious, _ = test.match_bboxes(true_boxes, boxes, 0.4)
+            _, _, ious, _ = match_boxes.match_bboxes(true_boxes, boxes, 0.4)
             t40 += len(ious)
             t50 += len([hit for hit in ious if hit > 0.5])
             t60 += len([hit for hit in ious if hit > 0.6])
