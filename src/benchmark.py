@@ -4,28 +4,27 @@ import numpy as np
 import os.path
 import time
 
-import utils
+import models
 import match_boxes
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True, choices=["easyocr", "tesseract", "text_spotting"], help="Choose a model from Easyocr, Tesseract or TextSpotting")
-    parser.add_argument("--detModel", help="Path to a binary .onnx model for detection", default="DB_TD500_resnet50.onnx", choices=["DB_IC15_resnet50.onnx", "DB_TD500_resnet50.onnx", "DB_IC15_resnet18.onnx", "DB_TD500_resnet18.onnx"])
-    parser.add_argument("--recModelPath", help="Path to a binary .onnx model for recognition", default="../data/crnn.onnx")
-    parser.add_argument("--vocPath", default="../data/alphabet_36.txt", help="Path to benchmarks for evaluation")
+    parser.add_argument("--model", required=True, choices=["easyocr", "tesseract", "text_spotting", "mmocr"], help="Choose a model from Easyocr, Tesseract, MMOCR or TextSpotting")
+    parser.add_argument("--detModel", help="Path to a binary .onnx model for detection", default="DB_TD500_resnet18.onnx", choices=["DB_IC15_resnet50.onnx", "DB_TD500_resnet50.onnx", "DB_IC15_resnet18.onnx", "DB_TD500_resnet18.onnx"])
     args = parser.parse_args()
 
     if args.model == "easyocr":
-        model = utils.EasyOCR()
+        model = models.EasyOCR()
     elif args.model == "tesseract":
-        model = utils.Tesseract()
+        model = models.Tesseract()
+    elif args.model == "mmocr":
+        model = models.mmocr()
     else:
-        model = utils.TextSpotting(args.detModel, args.recModelPath, args.vocPath)
-        args.model += " " + args.detModel
+        model = models.TextSpotting()
 
     # evaluate_recognition(model, args.model)
-    evaluate_detection(model, args.model, "IC15")
+    evaluate_detection(model, args.model, "TD500")
 
 
 def evaluate_recognition(model, name):

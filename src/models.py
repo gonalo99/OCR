@@ -2,11 +2,28 @@ import cv2
 import numpy as np
 import easyocr
 import pytesseract
+from mmocr.utils.ocr import MMOCR
+
+
+class mmocr():
+    def get_bboxes(self, frame):
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", recog=None, det="MaskRCNN_IC17")
+        results = ocr.readtext(frame)
+
+        boxes = []
+        for box in results[0]['boundary_result']:
+            boxes.append([box[0], box[1], box[2], box[5], box[8]])
+        return np.array(boxes)
+
+    def get_text(self, frame):
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", det=None)
+        results = ocr.readtext(frame)
+        return results[0]['text']
+
 
 class EasyOCR():
     def __init__(self):
         self.reader = easyocr.Reader(['en'])
-
 
     def get_bboxes(self, frame):
         ths = 0.1
@@ -22,19 +39,6 @@ class EasyOCR():
         return texts[0][1]
 
 
-    def process_frame(self, frame):
-        results = reader.readtext(frame)
-
-        boxes = []
-        texts = []
-        for result in results:
-            #cv2.putText(frame, text=result[1], org=(int(result[0][0][0]), int(result[0][0][1])), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.8, color=(0,255,0), thickness=2, lineType=cv2.LINE_AA)
-            #cv2.rectangle(frame, (int(result[0][0][0]), int(result[0][0][1])), (int(result[0][2][0]), int(result[0][2][1])), (0,255,0),3)
-            boxes.append(np.array(result[0]))
-            texts.append(result[1])
-
-        return [boxes, texts]
-
 class Tesseract():
     def get_bboxes(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -46,7 +50,7 @@ class Tesseract():
                 line = line.split()
                 if len(line) == 12:
                     x, y, w, h = int(line[6]), int(line[7]), int(line[8]), int(line[9])
-                    boxes.append([x, y, w + x, h + y])
+                    boxes.append([x, y, w + x, h + y, float(line[10])/100])
 
         return np.array(boxes)
 
@@ -66,31 +70,16 @@ class Tesseract():
             return texts
 
 
-    def process_frame(self, frame):
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 11')
-
-        boxes = []
-        texts = []
-        for id, line in enumerate(results.splitlines()):
-            if id != 0:
-                line = line.split()
-                if len(line) == 12:
-                    x, y, w, h = int(line[6]), int(line[7]), int(line[8]), int(line[9])
-                    # cv2.rectangle(frame, (x, y), (w+x, h+y), (0, 255, 0), 2)
-                    # cv2.putText(frame, line[11], (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 0, 0), 2)
-                    boxes.append([x, y, w+x, h+y])
-                    texts.append(line[11])
-
-        return [np.array(boxes), texts]
-
 class TextSpotting():
-    def __init__(self, detModel, recModelPath, vocPath):
-        if detModel == "DB_IC15_resnet50.onnx" or detModel == "DB_IC15_resnet18.onnx":
+    def __init__(self):
+        recModelPath = "../data/crnn.onnx"
+        vocPath = "../data/alphabet_36.txt"
+        detModel = "DB_IC15_resnet18.onnx"
+
+        if detModel == "DB_IC15_resnet18.onnx":
             inputHeight = 736
             inputWidth = 1280
-        if detModel == "DB_TD500_resnet50.onnx" or detModel == "DB_TD500_resnet18.onnx":
+        if detModel == "DB_TD500_resnet18.onnx":
             inputHeight = 736
             inputWidth = 736
 
@@ -132,7 +121,7 @@ class TextSpotting():
             for i in range(len(detResults[0])):
                 quadrangle = detResults[0][i].astype('float32')
                 x1, y1, x2, y2 = [quadrangle[0][0], quadrangle[2][1], quadrangle[2][0], quadrangle[0][1]]
-                boxes.append([x1, y1, x2, y2])
+                boxes.append([x1, y1, x2, y2, detResults[1][i]])
 
         return np.array(boxes)
 
