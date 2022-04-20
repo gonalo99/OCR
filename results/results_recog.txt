@@ -1,0 +1,26 @@
+------------------ Recognition ----------------------
+Recognition results for model  easyocr
+Recognition accuracy:  18.13 %
+Time per frame:  0.0069321622848510745  - FPS:  144.25513409940075
+
+
+Recognition results for model  tesseract
+Recognition accuracy:  14.70 %
+Time per frame:  0.11200030541419984  - FPS:  8.9285470812048
+
+
+Recognition results for model  text_spotting
+Recognition accuracy:  78.73 %
+Time per frame:  0.0634004762172699  - FPS:  15.77275218837561
+
+
+Recognition results for model  mmocr ABINET
+Recognition accuracy:  95.70 %
+Time per frame:  0.3424239222208659  - FPS:  2.920356713147491
+
+
+
+Recognition results for model  mmocr CRNN
+Recognition accuracy:  80.67 %
+Time per frame:  0.08059829998016357  - FPS:  12.407209584397124
+
