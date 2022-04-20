@@ -7,16 +7,17 @@ from mmocr.utils.ocr import MMOCR
 
 class mmocr():
     def get_bboxes(self, frame):
-        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", recog=None, det="MaskRCNN_IC17")
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", recog=None, det="PANet_IC15")
         results = ocr.readtext(frame)
 
         boxes = []
         for box in results[0]['boundary_result']:
-            boxes.append([box[0], box[1], box[2], box[5], box[8]])
+            boxes.append([[box[0], box[1]], [box[2], box[3]], [box[4], box[5]], [box[6], box[7]]])
+
         return np.array(boxes)
 
     def get_text(self, frame):
-        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", det=None)
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", det=None, recog="ABINet")
         results = ocr.readtext(frame)
         return results[0]['text']
 
@@ -29,8 +30,11 @@ class EasyOCR():
         ths = 0.1
         results = self.reader.detect(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
         boxes = []
-        for result in results[0][0]:
-            boxes.append([result[0], result[2], result[1], result[3]])
+        for box in results[0][0]:
+            boxes.append([[box[0], box[2]], [box[1], box[2]], [box[1], box[3]], [box[0], box[3]]])
+
+        for box in results[1][0]:
+            boxes.append([box[0], box[1], box[2], box[3]])
 
         return np.array(boxes)
 
@@ -50,7 +54,7 @@ class Tesseract():
                 line = line.split()
                 if len(line) == 12:
                     x, y, w, h = int(line[6]), int(line[7]), int(line[8]), int(line[9])
-                    boxes.append([x, y, w + x, h + y, float(line[10])/100])
+                    boxes.append([[x, y], [x+w, y], [x+w, y+h], [x, y+h]])
 
         return np.array(boxes)
 
@@ -120,8 +124,7 @@ class TextSpotting():
         if len(detResults[0]) > 0:
             for i in range(len(detResults[0])):
                 quadrangle = detResults[0][i].astype('float32')
-                x1, y1, x2, y2 = [quadrangle[0][0], quadrangle[2][1], quadrangle[2][0], quadrangle[0][1]]
-                boxes.append([x1, y1, x2, y2, detResults[1][i]])
+                boxes.append([quadrangle[1], quadrangle[2], quadrangle[3], quadrangle[0]])
 
         return np.array(boxes)
 
