@@ -7,7 +7,7 @@ from mmocr.utils.ocr import MMOCR
 
 class mmocr():
     def get_bboxes(self, frame):
-        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", recog=None, det="PANet_IC15")
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", recog=None, det="MaskRCNN_IC17")
         results = ocr.readtext(frame)
 
         boxes = []
@@ -28,8 +28,9 @@ class EasyOCR():
 
     def get_bboxes(self, frame):
         ths = 0.1
-        results = self.reader.detect(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
+        results = self.reader.readtext(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
         boxes = []
+
         for box in results[0][0]:
             boxes.append([[box[0], box[2]], [box[1], box[2]], [box[1], box[3]], [box[0], box[3]]])
 
@@ -78,7 +79,7 @@ class TextSpotting():
     def __init__(self):
         recModelPath = "../data/crnn.onnx"
         vocPath = "../data/alphabet_36.txt"
-        detModel = "DB_IC15_resnet18.onnx"
+        detModel = "DB_TD500_resnet18.onnx"
 
         if detModel == "DB_IC15_resnet18.onnx":
             inputHeight = 736
@@ -132,40 +133,3 @@ class TextSpotting():
         texts = self.recognizer.recognize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
         return texts
 
-    def process_frame(self, frame):
-        detResults = self.detector.detect(frame)
-        boxes = []
-        texts = []
-        if len(detResults[0]) > 0:
-            # Text Recognition
-            for i in range(len(detResults[0])):
-                quadrangle = detResults[0][i].astype('float32')
-                boxes.append(quadrangle)
-
-                quadrangle_2f = []
-                for j in range(4):
-                    quadrangle_2f.append(quadrangle[j])
-
-                # Transform and Crop
-                cropped = self.fourPointsTransform(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), quadrangle_2f)
-                recognitionResult = self.recognizer.recognize(cropped)
-                #cv2.putText(frame, recognitionResult, (int(quadrangle[3][0]), int(quadrangle[3][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                texts.append(recognitionResult)
-
-            #cv2.polylines(frame, np.int32(contours), True, (0, 255, 0), 2)
-
-        return [boxes, texts]
-
-    def fourPointsTransform(self, frame, vertices):
-        vertices = np.asarray(vertices)
-        
-        outputSize = (100, 32)
-
-        targetVertices = np.array([
-            [0, outputSize[1] - 1],
-            [0, 0],
-            [outputSize[0] - 1, 0],
-            [outputSize[0] - 1, outputSize[1] - 1]], dtype="float32")
-
-        rotationMatrix = cv2.getPerspectiveTransform(vertices, targetVertices)
-        return cv2.warpPerspective(frame, rotationMatrix, outputSize)

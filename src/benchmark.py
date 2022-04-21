@@ -22,8 +22,8 @@ def main():
     else:
         model = models.TextSpotting()
 
-    evaluate_recognition(model, args.model)
-    # evaluate_detection(model, args.model, "IC15", args.metric)
+    # evaluate_recognition(model, args.model)
+    evaluate_detection(model, args.model, "IC15", args.metric)
 
 
 def evaluate_recognition(model, name):

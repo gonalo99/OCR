@@ -5,15 +5,6 @@ from shapely.validation import make_valid
 import scipy
 
 
-#def readTruths(filepath):
-#    true_boxes = []
-#    for line in open(filepath, "r").readlines():
-#        vertices = line.split(",")
-#        box = [int(vertices[0]), int(vertices[1]), int(vertices[4]), int(vertices[5])]
-#        true_boxes.append(box)
-
-#    return np.array(true_boxes)
-
 def readTruths(filepath):
     true_boxes = []
     for line in open(filepath, "r").readlines():
@@ -25,49 +16,8 @@ def readTruths(filepath):
 
 
 def union_iou(boxes, true_boxes):
-    #from matplotlib import pyplot as plt
-    #from matplotlib import patches
-
-    new_boxes = boxes
-    new_true = true_boxes
-    #fig, ax = plt.subplots()
-    #for box in boxes:
-        #box = [[box[0], box[3]], [box[2], box[3]], [box[2], box[1]], [box[0], box[1]]]
-        #new_boxes.append(box)
-        #p = patches.Polygon(box, color='r', alpha=0.5)
-        #ax.add_patch(p)
-
-    #ax.set_xlim([0, 1000])
-    #ax.set_ylim([0, 500])
-    #plt.show()
-    #fig, ax = plt.subplots()
-
-    #for box in true_boxes:
-    #    box = [[box[0], box[3]], [box[2], box[3]], [box[2], box[1]], [box[0], box[1]]]
-    #    new_true.append(box)
-        #p = patches.Polygon(box, color='g', alpha=0.5)
-        #ax.add_patch(p)
-
-    #ax.set_xlim([200, 1000])
-    #ax.set_ylim([0, 300])
-    #plt.show()
-
-    true_polygon = unary_union([Polygon(box) for box in new_true])
-    detected_polygon = unary_union([Polygon(box) for box in new_boxes])
-
-    #fig, ax = plt.subplots()
-    #p = PolygonPatch(true_polygon, fc="GREEN", alpha=0.5)
-    #ax.add_patch(p)
-    #ax.set_xlim([200, 1000])
-    #ax.set_ylim([0, 300])
-    #plt.show()
-
-    #fig, ax = plt.subplots()
-    #p = PolygonPatch(detected_polygon, fc="RED", alpha=0.5)
-    #ax.add_patch(p)
-    #ax.set_xlim([200, 1000])
-    #ax.set_ylim([0, 300])
-    #plt.show()
+    true_polygon = unary_union([Polygon(box) for box in true_boxes])
+    detected_polygon = unary_union([Polygon(box) for box in boxes])
 
     union = unary_union([true_polygon, detected_polygon])
 
@@ -75,17 +25,6 @@ def union_iou(boxes, true_boxes):
         return 0
     else:
         intersection = make_valid(detected_polygon.intersection(true_polygon))
-
-
-        #fig, ax = plt.subplots()
-        #p = PolygonPatch(union, fc="BLUE", alpha=0.5)
-        #ax.add_patch(p)
-        #for p in list(intersection.geoms)[2:]:
-        #    i = PolygonPatch(p, fc="GRAY", alpha=0.8)
-        #    ax.add_patch(i)
-        #ax.set_xlim([200, 1000])
-        #ax.set_ylim([0, 300])
-        #plt.show()
         return intersection.area / union.area
 
 def bbox_iou(boxA, boxB):
