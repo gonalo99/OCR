@@ -1,0 +1,41 @@
+Detection results for model  easyocr
+Threshold 40:  75.49 %
+Threshold 60:  46.27 %
+Threshold 80:  0.97 %
+Time per frame:  0.05950216619999378  - FPS:  16.806110833660785
+
+Detection results for model  tesseract
+Threshold 40:  0.32 %
+Threshold 60:  0.00 %
+Threshold 80:  0.00 %
+Time per frame:  0.20135771996015078  - FPS:  4.966285872714007
+
+
+Detection results for model  text_spotting IC15
+Threshold 40:  53.57 %
+Threshold 60:  10.06 %
+Threshold 80:  1.14 %
+Time per frame:  0.6419355818977603  - FPS:  1.5577887068414098
+
+
+Detection results for model  text_spotting TD500
+Threshold 40:  76.62 %
+Threshold 60:  41.23 %
+Threshold 80:  2.44 %
+Time per frame:  0.3860715043235135  - FPS:  2.5901937563411503
+
+
+Detection results for model  mmocr PANET
+Threshold 40:  59.25 %
+Threshold 60:  19.64 %
+Threshold 80:  3.73 %
+Time per frame:  0.21230217620923922  - FPS:  4.7102673079263555
+
+
+Detection results for model  mmocr MaskRCNN
+Threshold 40:  44.64 %
+Threshold 60:  7.63 %
+Threshold 80:  0.49 %
+Time per frame:  0.696691682199379  - FPS:  1.435355158602023
+
+

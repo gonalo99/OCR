@@ -17,7 +17,7 @@ class mmocr():
         return np.array(boxes)
 
     def get_text(self, frame):
-        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", det=None, recog="ABINet")
+        ocr = MMOCR(config_dir="../../../Software/mmocr/configs", det=None, recog="CRNN")
         results = ocr.readtext(frame)
         return results[0]['text']
 
@@ -28,7 +28,7 @@ class EasyOCR():
 
     def get_bboxes(self, frame):
         ths = 0.1
-        results = self.reader.readtext(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
+        results = self.reader.detect(frame, ycenter_ths=ths, height_ths=ths, width_ths=ths, text_threshold=ths)
         boxes = []
 
         for box in results[0][0]:
@@ -40,7 +40,7 @@ class EasyOCR():
         return np.array(boxes)
 
     def get_text(self, frame):
-        texts = self.reader.recognize(frame, batch_size=2, allowlist="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        texts = self.reader.recognize(frame, batch_size=2, allowlist="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.")
         return texts[0][1]
 
 
@@ -61,7 +61,7 @@ class Tesseract():
 
     def get_text(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 8')
+        results = pytesseract.image_to_data(frame, config='-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ. --psm 8')
 
         texts = []
         for id, line in enumerate(results.splitlines()):

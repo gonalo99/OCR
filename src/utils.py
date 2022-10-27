@@ -3,13 +3,32 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 import scipy
+import cv2
+
+
+def fourPointsTransform(frame, vertices, multiplier):
+    vertices = np.float32(vertices)
+
+    width = np.sqrt((vertices[3][0] - vertices[1][0])**2 + (vertices[3][1] - vertices[1][1])**2)
+    height = np.sqrt((vertices[1][0] - vertices[0][0])**2 + (vertices[1][1] - vertices[0][1])**2)
+
+    outputSize = (multiplier*int(width), multiplier*int(height))
+
+    targetVertices = np.array([
+        [0, outputSize[1] - 1],
+        [0, 0],
+        [outputSize[0] - 1, 0],
+        [outputSize[0] - 1, outputSize[1] - 1]], dtype="float32")
+
+    rotationMatrix = cv2.getPerspectiveTransform(vertices, targetVertices)
+    return cv2.warpPerspective(frame, rotationMatrix, outputSize)
 
 
 def readTruths(filepath):
     true_boxes = []
     for line in open(filepath, "r").readlines():
         vertices = line.split(",")
-        box = np.int32([[vertices[0], vertices[1]], [vertices[2], vertices[3]], [vertices[4], vertices[5]], [vertices[6], vertices[7]]])
+        box = np.int32([[float(vertices[0]), float(vertices[1])], [float(vertices[2]), float(vertices[3])], [float(vertices[4]), float(vertices[5])], [float(vertices[6]), float(vertices[7])]])
         true_boxes.append(box)
 
     return np.array(true_boxes)

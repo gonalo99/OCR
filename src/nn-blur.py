@@ -9,15 +9,12 @@ import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from scipy.signal import savgol_filter
 
 import utils
 import time
-
-
-def configure_seed(seed):
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
 
 
 class FeedforwardNetwork(nn.Module):
@@ -49,7 +46,7 @@ class FeedforwardNetwork(nn.Module):
             else:
                 list.append(nn.Linear(hidden_size, hidden_size))
             list.append(activation)
-            #list.append(nn.Dropout(0.3))
+            list.append(nn.Dropout(0.5))
         list.append(nn.Linear(hidden_size, n_classes))
 
         self.model = nn.Sequential(*list)
@@ -95,41 +92,42 @@ def predict(model, X):
     return predicted_labels
 
 
-def evaluate(model, train_data):
+def evaluate(model, test_data, scaler, pca):
     """
     X (n_examples x n_features)
     y (n_examples): gold labels
     """
     model.eval()
-    X, y = processData(train_data)
+    X, y = processData(test_data)
+    X = scaler.transform(X)
+    X = pca.transform(X)
     y_hat = predict(model, torch.tensor(X))
     n_correct = (torch.tensor(y) == y_hat).sum().item()
     n_possible = len(X)
     model.train()
     return n_correct / n_possible
 
+
 def main():
-    train_data = buildTrainingData()
+    #train_data = buildTrainingData()
     #with open("train_data", "wb") as fp:  # Pickling
     #    pickle.dump(train_data, fp)
-    return
+    #return
 
+    # Retrieve training data
     with open("train_data", "rb") as fp:  # Unpickling
         train_data = pickle.load(fp)
 
-    configure_seed(seed=42)
+    # Configure NN model
     n_classes = 2
-    n_feats = 9
-
-    hidden_sizes = 20
-    layers = 5
+    n_feats = 5
+    hidden_sizes = 201
+    layers = 2
     activation = 'relu'
     optimizer = 'adam'
-    learning_rate = 0.00005
-
+    learning_rate = 0.000005
     l2_decay = 0
-    epochs = 2000
-
+    epochs = 5000
     model = FeedforwardNetwork(
             n_classes, n_feats,
             hidden_sizes, layers,
@@ -137,7 +135,6 @@ def main():
 
     # get an optimizer
     optims = {"adam": torch.optim.Adam, "sgd": torch.optim.SGD}
-
     optim_cls = optims[optimizer]
     optimizer = optim_cls(
         model.parameters(),
@@ -147,42 +144,82 @@ def main():
     # get a loss criterion
     criterion = nn.CrossEntropyLoss()
 
+    # Split train and test set
+    x, y = processData(train_data)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=109)  # 70% training and 30% test
+    test_data = [x+[y] for x,y in zip(X_test, y_test)]
+
+    # Feature scaling
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+    X_train = scaler.transform(X_train)
+
+    pca = PCA(n_components=0.95)
+    X_train = pca.fit_transform(X_train)
+
+    #fig = plt.figure(figsize=(8, 8))
+    #ax = plt.axes(projection='3d')
+    #ax.set_xlabel('Principal Component 1', fontsize=15)
+    #ax.set_ylabel('Principal Component 2', fontsize=15)
+    #ax.set_title('2 component PCA', fontsize=20)
+    #targets = ['0', '1']
+    #colors = ['r', 'g']
+    #for target, color in zip(targets,colors):
+    #    indicesToKeep = [i for i,e in enumerate(y_train) if e == int(target)]
+    #    ax.scatter(principalComponents[indicesToKeep, 0], principalComponents[indicesToKeep, 1], principalComponents[indicesToKeep, 2], c=color, s=50)
+    #ax.legend(targets)
+    #ax.grid()
+    #plt.show()
+    #return
+
     # training loop
     epochs = torch.arange(1, epochs + 1)
-    train_mean_losses = []
     train_losses = []
-
+    accuracies = []
+    mean_losses = []
     best_acc = 0
     for ii in epochs:
-        random.shuffle(train_data)
-        x, y = processData(train_data)
         print('Training epoch {}'.format(ii))
-        for X_batch, y_batch in zip(torch.tensor(x), torch.tensor(y)):
-            loss = train_batch(
-                X_batch, y_batch, model, optimizer, criterion)
+        for X_batch, y_batch in zip(torch.tensor(X_train), torch.tensor(y_train)):
+            loss = train_batch(X_batch, y_batch, model, optimizer, criterion)
             train_losses.append(loss)
 
-        acc = evaluate(model, train_data)
+        acc = evaluate(model, test_data, scaler, pca)
+        accuracies.append(acc)
         mean_loss = torch.tensor(train_losses).mean().item()
-        print('Training loss: %.4f' % (mean_loss))
+        mean_losses.append(mean_loss)
+        print('Training loss: %.4f' % mean_loss)
         print('Accuracy:', acc)
 
         if acc > best_acc:
+            best_epoch = ii
             best_acc = acc
             best_model_state = copy.deepcopy(model.state_dict())
 
-        print("Best:", best_acc)
+        print("Best:", best_acc, "in epoch", best_epoch)
 
-    print("Best:", best_acc)
+    print("Best:", best_acc, "in epoch", best_epoch)
+    yhat = savgol_filter(accuracies, 17, 4)
+    # Plot training loss and test accuracy in same graph
+    fig, ax = plt.subplots()
+    ax.plot(epochs[20:], mean_losses[20:], label='Loss', color='blue')
+    #ax2 = ax.twinx()
+    #ax2.plot(epochs[20:], accuracies[20:], label='Accuracy', color='red')
+    ax3 = ax.twinx()
+    ax3.plot(epochs[20:], yhat[20:], label='Smoothed Accuracy', color='orange')
+    fig.legend()
+    plt.show()
+
+    # Saved model has an accuracy of 0.9437 %
     torch.save(best_model_state, 'checkpoint.pth')
 
 
-def processData(list):
+def processData(data):
     x = []
     y = []
-    for data in list:
-        x.append(data[:-1])
-        y.append(data[-1])
+    for element in data:
+        x.append(element[:-1])
+        y.append(element[-1])
 
     return x, y
 
@@ -212,12 +249,6 @@ def buildTrainingData():
                 sign = 0
 
             train_data.append([getGradient(frame), getGradient(cropped), getLaplacian(frame), getLaplacian(cropped), getSharpEdges(frame), getSharpEdges(cropped), getAverageGradient(cropped), getAverageLaplacian(cropped), getAverageSharpEdges(cropped), sign])
-
-    scaler = StandardScaler()
-    scaler.fit(train_data)
-    print(scaler.mean_)
-    #train_data = scaler.fit_transform(train_data)
-    #print(train_data)
 
     return train_data
 

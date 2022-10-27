@@ -1,11 +1,11 @@
 ------------------ Recognition ----------------------
 Recognition results for model  easyocr
-Recognition accuracy:  18.13 %
+Recognition accuracy:  70.43 %
 Time per frame:  0.0069321622848510745  - FPS:  144.25513409940075
 
 
 Recognition results for model  tesseract
-Recognition accuracy:  14.70 %
+Recognition accuracy:   56.17 %
 Time per frame:  0.11200030541419984  - FPS:  8.9285470812048
 
 

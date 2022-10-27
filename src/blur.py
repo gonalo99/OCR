@@ -22,8 +22,14 @@ def main():
                 box = np.int32([[vertices[0], vertices[1]], [vertices[2], vertices[3]], [vertices[4], vertices[5]], [vertices[6], vertices[7]]])
                 blurred = blur_portion(blurred, box)
 
-            box = np.int32([[vertices[0], vertices[1]], [vertices[2], vertices[3]], [vertices[4], vertices[5]], [vertices[6], vertices[7]]])
-            blurred = cv2.drawContours(blurred, [np.int32(box)], -1, (0, 0, 255), 2)
+            else:
+                box = np.int32([[vertices[0], vertices[1]], [vertices[2], vertices[3]], [vertices[4], vertices[5]], [vertices[6], vertices[7]]])
+                blurred = cv2.drawContours(blurred, [np.int32(box)], -1, (0, 255, 0), 2)
+
+        if image[:-1] == "img_100.jpg":
+            from matplotlib import pyplot
+            pyplot.imshow(blurred)
+            pyplot.show()
 
         #boxes = model.get_bboxes(blurred)
         #res = blurred.copy()
@@ -31,8 +37,8 @@ def main():
         #    new = [[box[0], box[3]], [box[2], box[3]], [box[2], box[1]], [box[0], box[1]]]
         #    res = cv2.drawContours(res, [np.int32(new)], -1, (0, 0, 255), 3)
 
-        if not cv2.imwrite("../data/blurred/"+dataset+"/test_images/"+image[:-1], blurred):
-            print("An error occurred saving image ", image[:-1])
+        #if not cv2.imwrite("../data/blurred/"+dataset+"/test_images/"+image[:-1], blurred):
+        #    print("An error occurred saving image ", image[:-1])
 
 
 def blur_portion(image, box):

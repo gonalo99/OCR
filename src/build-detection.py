@@ -1,18 +1,17 @@
 import sys
-
 from bs4 import BeautifulSoup
 import glob
 import cv2
 import numpy as np
-
 from matplotlib import pyplot as plt
 import random
+
+import utils
 
 bad = True
 
 
 def main():
-    recog_no = 1
     detect_no = 1
 
     # Loop through all the frames
@@ -40,7 +39,7 @@ def main():
             label = object.find("name").text
 
             # Crop the image in the bounding box
-            cropped = fourPointsTransform(frame, new_quadrangle)
+            cropped = utils.fourPointsTransform(frame, new_quadrangle, 1)
 
             # Get a metric for the quality of the bbox
             #gX = cv2.Sobel(cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY), cv2.CV_64F, 1, 0)
@@ -73,13 +72,6 @@ def main():
             cv2.imwrite('../data/custom_detection/images/img_' + str(detect_no) + '.png', frame)
             detect_no += 1
 
-            # Save recognition dataset
-            #cv2.imwrite('../data/custom_recognition/img_' + str(recog_no) + '.png')
-            #recog_gt_file = open('../data/custom_recognition/gts.txt', 'a')
-            #recog_gt_file.write('img_' + str(recog_no) + ' ' + label + '\n')
-            #recog_gt_file.close()
-            #recog_no += 1
-
 
 def on_press(event):
     global bad
@@ -89,24 +81,6 @@ def on_press(event):
         bad = True
     elif event.key == 'enter':
         sys.exit()
-
-
-def fourPointsTransform(frame, vertices):
-    vertices = np.float32(vertices)
-
-    width = np.sqrt((vertices[3][0] - vertices[1][0])**2 + (vertices[3][1] - vertices[1][1])**2)
-    height = np.sqrt((vertices[1][0] - vertices[0][0])**2 + (vertices[1][1] - vertices[0][1])**2)
-
-    outputSize = (int(width), int(height))
-
-    targetVertices = np.array([
-        [0, outputSize[1] - 1],
-        [0, 0],
-        [outputSize[0] - 1, 0],
-        [outputSize[0] - 1, outputSize[1] - 1]], dtype="float32")
-
-    rotationMatrix = cv2.getPerspectiveTransform(vertices, targetVertices)
-    return cv2.warpPerspective(frame, rotationMatrix, outputSize)
 
 
 if __name__ == "__main__":
